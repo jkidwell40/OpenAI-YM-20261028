@@ -1,0 +1,62 @@
+name: Yang-Mills Lean bridge check
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'MassGapBridgeSpec_v4.lean'
+      - 'PhasewiseDiagonalBridge_v3.lean'
+      - 'lakefile.toml'
+      - '.github/workflows/ym-bridge-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  bridge:
+    name: Build the Bridge library and its imports
+    runs-on: ubuntu-latest
+    # GitHub-hosted jobs stop at 6 hours. The upstream build may need more than
+    # one run; partial build products are cached between runs (see below).
+    timeout-minutes: 350
+    steps:
+      - name: Check out the fork
+        uses: actions/checkout@v4
+
+      - name: Install the project toolchain and fetch the Mathlib cache
+        uses: leanprover/lean-action@v1
+        with:
+          auto-config: false
+          build: false
+          test: false
+          lint: false
+          use-mathlib-cache: true
+          use-github-cache: false # Custom partial-build cache below
+
+      - name: Restore partial project build from earlier runs
+        uses: actions/cache/restore@v4
+        with:
+          path: .lake/build
+          key: ym-build-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lake-manifest.json', 'lakefile.toml') }}-${{ github.run_id }}
+          restore-keys: ym-build-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lake-manifest.json', 'lakefile.toml') }}-
+
+      - name: Build Bridge (v4 first, then v3, via Lake's import graph)
+        run: |
+          set -o pipefail
+          timeout 20000 lake build Bridge 2>&1 | tee ym-build.log
+
+      - name: Save partial build even if the step above failed or timed out
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .lake/build
+          key: ym-build-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lake-manifest.json', 'lakefile.toml') }}-${{ github.run_id }}
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ym-bridge-lean-logs
+          path: ym-*.log
+          if-no-files-found: warn
+          retention-days: 14
