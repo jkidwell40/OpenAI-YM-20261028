@@ -496,15 +496,24 @@ theorem diagonalToVariance (T : Hierarchy C) (order : ℕ → ℕ) :
     funext ξ
     rw [Complex.ofReal_pow, ← Complex.conj_mul', map_sub]
     ring
+  -- v4.1 (CI fix 1): integrability facts stated in lambda form, so that
+  -- `integral_sub` produces a pattern that `rw` can find (the `Integrable.sub`
+  -- terms have pointwise-`Pi.sub` types, which did not match syntactically).
+  have hA : Integrable (fun ξ => conj (f ξ) * f ξ - conj c * f ξ) T.phaseMeasure :=
+    hhI.sub (hfI.const_mul _)
+  have hB : Integrable (fun ξ => conj (f ξ) * c - conj c * c) T.phaseMeasure :=
+    (hgI.mul_const _).sub (integrable_const _)
+  have hfc' : Integrable (fun ξ => conj c * f ξ) T.phaseMeasure := hfI.const_mul _
+  have hgc' : Integrable (fun ξ => conj (f ξ) * c) T.phaseMeasure := hgI.mul_const _
   have hI : ∫ ξ, ((‖f ξ - c‖ ^ 2 : ℝ) : ℂ) ∂T.phaseMeasure = 0 := by
-    rw [hexp,
-      integral_sub (hhI.sub (hfI.const_mul _)) ((hgI.mul_const _).sub (integrable_const _)),
-      integral_sub hhI (hfI.const_mul _),
-      integral_sub (hgI.mul_const _) (integrable_const _),
+    rw [hexp, integral_sub hA hB, integral_sub hhI hfc',
+      integral_sub hgc' (integrable_const _),
       integral_const_mul, integral_mul_const, integral_const, h1, h2, h3]
     simp
+  -- v4.1 (CI fix 2): `integral_ofReal` is stated for the `RCLike` coercion;
+  -- the goal uses `Complex.ofReal`, so use the complex-specific lemma.
   have hC : ((∫ ξ, ‖f ξ - c‖ ^ 2 ∂T.phaseMeasure : ℝ) : ℂ) = 0 := by
-    rw [← integral_ofReal]; exact hI
+    rw [← integral_complex_ofReal]; exact hI
   exact_mod_cast hC
 
 /-- Step 4, conditional only on `PhasewiseDiagonal` (UNCOMPILED). With
