@@ -1,4 +1,3 @@
-
 name: Yang-Mills Lean bridge check
 
 on:
@@ -11,6 +10,7 @@ on:
       - 'AxiomAudit.lean'
       - 'ConstructedPhaseCollapseCorollary.lean'
       - 'PublicWitnessCorollary.lean'
+      - 'SpectralEnergyBridge.lean'
       - '.github/workflows/ym-bridge-check.yml'
 
 permissions:
@@ -68,6 +68,11 @@ jobs:
         run: |
           set -o pipefail
           lake env lean PublicWitnessCorollary.lean 2>&1 | tee ym-public-witness.log
+
+      - name: Compile and audit the spectral energy bridge (Track A)
+        run: |
+          set -o pipefail
+          lake env lean SpectralEnergyBridge.lean 2>&1 | tee ym-spectral-energy.log
 
       - name: Save partial build even if the step above failed or timed out
         if: always()
