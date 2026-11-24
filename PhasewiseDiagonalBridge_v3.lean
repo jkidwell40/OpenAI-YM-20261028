@@ -81,7 +81,7 @@ theorem omega_pair (v : Future L a) :
     inner ℂ C.omega (C.GNS.plant v) = S.expect v.val := by
   unfold Chamber.omega
   rw [C.GNS.measure]
-  simp [Table.gram, air, reflectedPoint]
+  simp [Table.gram, air, Word.reflectedPoint]  -- CI fix: qualified name
 
 /-- The vacuum limit of the diagonal pairing, for a normalized table. -/
 theorem pair_limit (hU : C.UniqueHeat) (hB : S.Basic) (v : Future L a) :
@@ -227,10 +227,14 @@ theorem coupled_pair {n : ℕ}
     have e_reflect : Word.reflect (Word.carry v s) timeAxis =
         (List.ofFn fun j => (timeFlip (x j + s), rtok j)).reverse := by
       rw [Word.reflectedPoint]
-      simp [Word.carry, hv, Word.realize, List.map_ofFn, List.map_reverse, Function.comp, hrtok]
+      simp [Word.carry, hv, Word.realize, List.map_ofFn, List.map_reverse, hrtok]
+      -- CI fix: remaining goal is a definitional function equality
+      funext j; rfl
     have e_carry : Word.carry (Word.realize rtok (WithLp.toLp 2 y)) s =
         List.ofFn fun j => (timeFlip (x j + s), rtok j) := by
-      simp [Word.carry, Word.realize, List.map_ofFn, Function.comp, hy]
+      simp [Word.carry, Word.realize, List.map_ofFn, hy]
+      -- CI fix: remaining goal needs `sub_add_cancel` pointwise
+      funext j; simp
     refine (Table.order (F.α.ensemble i) (hH i).laws.toSymmetric
       (Word.reflects timeAxis hpos.1) ?_)
     rw [e_reflect, e_carry]
@@ -249,7 +253,12 @@ theorem coupled_pair {n : ℕ}
     dsimp only [Hierarchy.phasePairAt, Hierarchy.grouped]
     have hconf : WithLp.toLp 2 (X ∘ (Fintype.equivFin (Fin n ⊕ Fin n)).symm) ∈ conf _ :=
       hXinj.comp (Fintype.equivFin (Fin n ⊕ Fin n)).symm.injective
-    rw [htag]
+    -- CI fix: `rw [htag]` failed (motive not type-correct at instance
+    -- transparency: `(hierarchy F Q).Character` vs `F.α.space.X`). Rewrite
+    -- the tag list by `congrArg` instead, elaborated at default transparency.
+    refine (congrArg (fun z : Fin n ⊕ Fin n → (hierarchy F Q).Tag =>
+        (hierarchy F Q).correlation (some i) (z ∘ ⇑(Fintype.equivFin (Fin n ⊕ Fin n)).symm)
+          (WithLp.toLp 2 (X ∘ ⇑(Fintype.equivFin (Fin n ⊕ Fin n)).symm))) htag).trans ?_
     refine (Table.at_project S (F.α.ensemble i) (hH i).laws.toSymmetric (hr i) hconf
       (V ∘ (Fintype.equivFin (Fin n ⊕ Fin n)).symm)).trans ?_
     rw [← Table.readAt]
@@ -378,7 +387,7 @@ theorem phasewiseDiagonal_hierarchy : (hierarchy F Q).PhasewiseDiagonal := by
       intro z
       filter_upwards [Filter.eventually_ge_atTop (z : ℝ)] with t ht
       apply NNReal.coe_le_coe.mp
-      rw [Real.coe_toNNReal (le_trans z.property ht)]
+      rw [Real.coe_toNNReal t (le_trans z.property ht)]  -- CI fix: explicit `t`
       exact ht
     have hLimit :=
       (V.pair_limit (hCompleted.euclid ξ) (F.phase.phase.states ξ).laws w).comp hToNNReal
