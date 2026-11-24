@@ -275,6 +275,8 @@ theorem coupled_pair {n : ℕ}
         List.ofFn fun j => (x j + s + t • basis timeAxis, tok j) := by
       simp [hR, hw, travel, Word.reflectedPoint, Word.carry, hv, Word.realize, List.map_ofFn,
         List.map_reverse, Function.comp, hrtok, Real.coe_toNNReal t ht]
+      -- CI fix: remaining goal holds by definition (same shape as `e_reflect`)
+      rfl
     rw [List.perm_ext_iff_of_nodup
       (List.nodup_iff_injective_get.mpr (Word.plantInj hdR))
       (YM.OPE.worded_nodup V hX's)]
