@@ -1,3 +1,4 @@
+
 name: Yang-Mills Lean bridge check
 
 on:
@@ -8,6 +9,7 @@ on:
       - 'PhasewiseDiagonalBridge_v3.lean'
       - 'lakefile.toml'
       - 'AxiomAudit.lean'
+      - 'ConstructedPhaseCollapseCorollary.lean'
       - '.github/workflows/ym-bridge-check.yml'
 
 permissions:
@@ -50,6 +52,11 @@ jobs:
         run: |
           set -o pipefail
           lake env lean AxiomAudit.lean 2>&1 | tee ym-axioms.log
+
+      - name: Compile and audit the new constructed-hierarchy corollary
+        run: |
+          set -o pipefail
+          lake env lean ConstructedPhaseCollapseCorollary.lean 2>&1 | tee ym-corollary.log
 
       - name: Save partial build even if the step above failed or timed out
         if: always()
