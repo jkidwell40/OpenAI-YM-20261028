@@ -10,6 +10,7 @@ on:
       - 'lakefile.toml'
       - 'AxiomAudit.lean'
       - 'ConstructedPhaseCollapseCorollary.lean'
+      - 'PublicWitnessCorollary.lean'
       - '.github/workflows/ym-bridge-check.yml'
 
 permissions:
@@ -57,6 +58,16 @@ jobs:
         run: |
           set -o pipefail
           lake env lean ConstructedPhaseCollapseCorollary.lean 2>&1 | tee ym-corollary.log
+
+      - name: Build the upstream public construction (Construction.lean)
+        run: |
+          set -o pipefail
+          timeout 18000 lake build Construction 2>&1 | tee ym-construction.log
+
+      - name: Compile and audit the public-witness corollary
+        run: |
+          set -o pipefail
+          lake env lean PublicWitnessCorollary.lean 2>&1 | tee ym-public-witness.log
 
       - name: Save partial build even if the step above failed or timed out
         if: always()
