@@ -7,6 +7,7 @@ on:
       - 'MassGapBridgeSpec_v4.lean'
       - 'PhasewiseDiagonalBridge_v3.lean'
       - 'lakefile.toml'
+      - 'AxiomAudit.lean'
       - '.github/workflows/ym-bridge-check.yml'
 
 permissions:
@@ -44,6 +45,11 @@ jobs:
         run: |
           set -o pipefail
           timeout 20000 lake build Bridge 2>&1 | tee ym-build.log
+
+      - name: Axiom audit (runs only if the build succeeded)
+        run: |
+          set -o pipefail
+          lake env lean AxiomAudit.lean 2>&1 | tee ym-axioms.log
 
       - name: Save partial build even if the step above failed or timed out
         if: always()
